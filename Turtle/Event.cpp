@@ -112,7 +112,9 @@ bool TurtleServer::IsWaitingEvent()
 {
 	websocket.Do();
 
-	String s = websocket.Receive();
+	String s;
+	if (!websocket.IsClosed()) // Note websocket.Do() can now close the socket
+		s = websocket.Receive();
 
 	if(websocket.IsClosed()) {
 		Ctrl::EndSession();

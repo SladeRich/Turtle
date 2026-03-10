@@ -162,6 +162,11 @@ public:
     
 private:
     static bool         StartSession();
+    static void         InitSession(); // Add extra controls to start and stop a web session for multiserver applications
+public:
+    static bool         ConnectSession(int port,const char *hostUrl,const char *webName); // Add extra controls to start and stop a web session for multiserver applications
+    static void         CloseSession() {quit=true;} // Add extra controls to start and stop a web session for multiserver applications
+    friend void         Turtle_PutLink(const String& link); // Modified for multiserver applications
     friend void         RunTurtleGui(TurtleServer&, Event<>);
 };
 
