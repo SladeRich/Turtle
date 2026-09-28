@@ -46,7 +46,7 @@ Default is 8888. Returns `*this for method chaining.&]
 [s5;:Upp`:`:TurtleServer`:`:WsPort`(int`): [_^Upp`:`:TurtleServer^ TurtleServer][@(0.0.255) `&
 ]_[* WsPort]([@(0.0.255) int]_[*@3 port])&]
 [s2;%% Sets the connection port number for websocket connection. 
-Default is 8887. Returns `*this for method chaining.&]
+Default is 0, which will then use the same port as html. Returns `*this for method chaining.&]
 [s3;%% &]
 [s4; &]
 [s5;:Upp`:`:TurtleServer`:`:MaxConnections`(int`): [_^Upp`:`:TurtleServer^ TurtleServer

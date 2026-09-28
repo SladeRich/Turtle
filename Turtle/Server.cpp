@@ -19,9 +19,19 @@ static bool sSendTurtleHtml(TcpSocket& s, const String& host, int port)
 	HttpHeader h;
 	if(!h.Read(s))
 		return false;
+	// Ensure this is not actually a web socket connection that has got mixed up
+	String key = h["Sec-Websocket-Version"];
+	if(*key) {
+		LLOG("received unexpected web socket");
+		return false;
+	}
+	// Send Java script HTML file to capture key / mouse events
 	LLOG("Sending Turtle HTML skt:"<<s.GetSOCKET()<<" host:"<<host<<" port:"<<port);
 	String html = String(turtle_html, turtle_html_length);
-	html.Replace("%%host%%", Format("ws://%s:%d", host, port));
+	if(port == 0)
+		html.Replace("\"%%host%%\"", "{ noServer: true }");
+	else
+		html.Replace("%%host%%", Format("ws://%s:%d", host, port));
 	return HttpResponse(s, h.scgi, 200, "OK", "text/html", html);
 }
 
@@ -68,29 +78,32 @@ bool TurtleServer::StartSession()
 
 #ifdef _DEBUG
 	int cnt = 0;
-	LLOG("Begin to listen on html port " << html_port << ", pid: " << getpid());
+	LLOG("Open HTTP port on " << html_port << " with pid: " << getpid());
 	while(!server.Listen(ipinfo, html_port, 5, false, true)) {
-		LLOG("Trying to start listening on html port (other process using the same port?) " << ++cnt);
+		LLOG("Trying to open HTTP port (another process using the same port?) " << ++cnt);
 		Sleep(1000);
 	}
-	LLOG("Begin to listen on ws port " << ws_port << ", pid: " << getpid());
-	while(!ws_server.Listen(ipinfo_ws, ws_port, 5, false, true)) {
-		LLOG("Trying to start listening on ws port (other process using the same port?) " << ++cnt);
-		Sleep(1000);
+	if(ws_port != 0) {
+		LLOG("Open Web Socket port on " << html_port << " with pid: " << getpid());
+		while(!ws_server.Listen(ipinfo_ws, ws_port, 5, false, true)) {
+			LLOG("Trying to open Web Socket port (another process using the same port?) " << ++cnt);
+			Sleep(1000);
+		}
 	}
 #else
+	LLOG("Open HTTP port on " << html_port << " with pid: " << getpid());
 	if(!server.Listen(ipinfo, html_port, 5, false, true)) {
-		LLOG("Cannot open server socket for listening on html port!");
+		LLOG("Cannot open server socket for listening on HTTP port!");
 		Exit(1);
 	}
-	if(!ws_server.Listen(ipinfo_ws, ws_port, 5, false, true)) {
-		LLOG("Cannot open server socket for listening on ws port!");
-		Exit(1);
+	if(ws_port != 0) {
+		LLOG("Open Web Socket port on " << html_port << " with pid: " << getpid());
+		if(!ws_server.Listen(ipinfo_ws, ws_port, 5, false, true)) {
+			LLOG("Cannot open server socket for listening on Web Socket port!");
+			Exit(1);
+		}
 	}
 #endif
-
-	LLOG("Starting to listen on html port " << html_port << ", pid: " << getpid());
-	LLOG("Starting to listen on ws port " << ws_port << ", pid: " << getpid());
 
 	for(;;) {
 		sUpdateChildList();
@@ -99,17 +112,26 @@ bool TurtleServer::StartSession()
 		TcpSocket socket;
 		if(!socket.Accept(server))
 			continue;
+		LLOG("Received HTML connection on socket "<<socket.GetSOCKET()<< " from " << socket.GetPeerAddr());
+		if (html_port==443) { // Note HTTPS uses port 443, but browsers will normally reject the connection without a certificate (which helps to prevents man in the middle attacks)
+			if (socket.StartSSL()) {
+				while (socket.SSLHandshake()) {
+					Sleep(10); // Note SSLHandshake() will timeout
+				}
+			}
+		}
 		if(!sSendTurtleHtml(socket, host, ws_port))
 			continue;
 		websocket.NonBlocking();
 		int retries = 0;
-		while(!websocket.Accept(ws_server)) {
+		while(!websocket.Accept(ws_port==0?server:ws_server)) {
 			Sleep(20);
 			if (++retries>100) {
 				return false; // Stop it from hanging forever
 			}
 		}
-		LLOG("Websocket connection accepted. IP: " << websocket.GetPeerAddr());
+		LLOG("Received Web Socket connection on socket "<<websocket.GetSOCKET()<< " from " << websocket.GetPeerAddr());
+		
 //#ifdef PLATFORM_POSIX
 //		if(sChildPids.GetCount() >= connection_limit)
 //			continue;

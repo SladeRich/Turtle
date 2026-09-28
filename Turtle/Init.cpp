@@ -7,7 +7,7 @@
 namespace Upp {
 String      TurtleServer::host              = "localhost";
 int         TurtleServer::html_port         = 8888;
-int         TurtleServer::ws_port           = 8887;
+int         TurtleServer::ws_port           = 0;
 String      TurtleServer::ip                = "0.0.0.0";
 int         TurtleServer::connection_limit  = 100;
 bool        TurtleServer::debugmode;
