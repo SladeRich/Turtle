@@ -132,4 +132,9 @@ bool TurtleServer::StartSession()
 	stat_started = GetSysTime();
 	return true;
 }
+
+String TurtleServer::GetJavaScript()
+{
+	return String(turtle_html, turtle_html_length);
+}
 }
