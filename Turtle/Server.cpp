@@ -13,9 +13,7 @@ namespace Upp {
 
 static Vector<int> sChildPids;
 
-Image *AppIcon = 0;
-
-static bool sSendTurtleHtml(TcpSocket& s, const String& host, int port)
+static bool sSendTurtleHtml(TcpSocket& s, const String& host, int port, const String& fav_icon)
 {
 	HttpHeader h;
 	if(!h.Read(s))
@@ -34,11 +32,11 @@ static bool sSendTurtleHtml(TcpSocket& s, const String& host, int port)
 	else
 		html.Replace("%%host%%", Format("ws://%s:%d", host, port));
 
-	if (AppIcon) {
+	if (*fav_icon) {
 		// Browsers request the favicon before requesting the web socket, thus providing it in advance to prevent this
 		int at = html.Find("</head>");
-		String icon64 = Base64Encode((const char*)AppIcon->Begin(),AppIcon->GetLength());
-		String link = Format("<link rel=\"icon\" type=\"image/x-icon\" href=\"data:image/x-icon;base64,%s\" />",icon64);
+		String icon64 = Base64Encode(fav_icon);
+		String link = Format("<link rel=\"icon\" type=\"image/png\" href=\"data:image/png;base64,%s\" />",icon64);
 		html.Insert(at,link);
 	}
 	return HttpResponse(s, h.scgi, 200, "OK", "text/html", html);
@@ -98,7 +96,7 @@ bool TurtleServer::StartSession()
 		TcpSocket socket;
 		if(!socket.Accept(server))
 			continue;
-		LLOG("Received HTML connection on socket "<<socket.GetSOCKET()<< " from " << socket.GetPeerAddr());
+		LLOG("Received HTML connection on socket " << socket.GetSOCKET() << " from " << socket.GetPeerAddr());
 		if (html_port==443) { // Note HTTPS uses port 443, but browsers will normally reject the connection without a certificate (which helps to prevents man in the middle attacks)
 			if (socket.StartSSL()) {
 				while (socket.SSLHandshake()) {
@@ -106,7 +104,7 @@ bool TurtleServer::StartSession()
 				}
 			}
 		}
-		if(!sSendTurtleHtml(socket, host, ws_port))
+		if(!sSendTurtleHtml(socket, host, ws_port, fav_icon))
 			continue;
 		int res, retries = 0;
 		for(;;) {
@@ -123,7 +121,7 @@ bool TurtleServer::StartSession()
 		}
 		if (res == -1)
 			continue;
-		LLOG("Received Web Socket connection on socket "<<websocket.GetSOCKET()<< " from " << websocket.GetPeerAddr());
+		LLOG("Received Web Socket connection on socket " << websocket.GetSOCKET() << " from " << websocket.GetPeerAddr());
 		break;
 	}
 

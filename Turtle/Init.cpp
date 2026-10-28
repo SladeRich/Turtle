@@ -30,6 +30,7 @@ int         TurtleServer::stat_setimage;
 int64       TurtleServer::stat_setimage_len;
 int         TurtleServer::stat_roundtrip_ms;
 int         TurtleServer::stat_client_ms;
+String      TurtleServer::fav_icon;
 
 Event<int, String> TurtleServer::WhenConnect;
 Event<int>         TurtleServer::WhenTerminate;

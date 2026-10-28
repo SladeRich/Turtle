@@ -15,6 +15,7 @@ public:
     TurtleServer&       Host(const String& host)           { TurtleServer::host = host; return *this; }
     TurtleServer&       HtmlPort(int port)                 { TurtleServer::html_port = port; return *this; }
     TurtleServer&       WsPort(int port)                   { TurtleServer::ws_port = port; return *this; }
+    TurtleServer&       FavIcon(const String& ico)         { TurtleServer::fav_icon = ico; return *this; }
     TurtleServer&       MaxConnections(int limit)          { TurtleServer::connection_limit = max(1, limit); return *this; }
 
     static void         DebugMode(bool b = true)           { TurtleServer::debugmode = b; }
@@ -147,6 +148,7 @@ private:
     static int          connection_limit;
     static bool         debugmode;
     static bool         mousein;
+		static String       fav_icon;
 
 public:
     // Statistics.
@@ -170,8 +172,6 @@ public:
 };
 
 void RunTurtleGui(TurtleServer& gui, Event<> app_main);
-
-extern Upp::Image *AppIcon;
 
 }
 #endif
